@@ -1,11 +1,11 @@
 
 #include <iostream>
 #include "parsers/visual_studio/SlnParser.hpp"
-
+#include "data_model/DataModel.hpp"
 
 int main(int argc, char* argv[]) {
 
-	// lecture du projet
+    // lecture du projet
     if (argc != 2) {
         std::cerr << "Usage: dragon-eyes <solution.sln>\n";
         return 1;
@@ -22,11 +22,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-	// generation du graph
+    // generation du graph
 
-	// detection des bug
+    // detection des bug
 
-	// detection des améliorations
+    // detection des améliorations
 
-	return 0;
+    return 0;
 }
