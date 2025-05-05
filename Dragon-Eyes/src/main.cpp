@@ -56,33 +56,50 @@ int main(int argc, char* argv[]) {
                 for (auto& cls : file.classes) {
                     std::cout << "        • Classe « " << cls.name << " »\n";
 
-                    // 3.a) Attributs
-                    if (!cls.attributes.empty()) {
-                        std::cout << "          Attributs :\n";
-                        for (auto& attr : cls.attributes) {
-                            const char* accessStr =
-                                (attr.access == DragonEyes::AccessSpecifier::Public ? "public" :
-                                    attr.access == DragonEyes::AccessSpecifier::Protected ? "protected" : "private");
-                            std::cout << "            - [" << accessStr << "] "
-                                << attr.type << " " << attr.name << "\n";
+                    // 4.a) Bases
+                    if (!cls.baseClasses.empty()) {
+                        std::cout << "          Hérite de :\n";
+                        for (auto& b : cls.baseClasses) {
+                            std::cout << "            - " << b << "\n";
                         }
                     }
 
-                    // 3.b) Méthodes
-                    if (!cls.methods.empty()) {
-                        std::cout << "          Methodes :\n";
-                        for (auto& m : cls.methods) {
-                            const char* accessStr =
-                                (m.access == DragonEyes::AccessSpecifier::Public ? "public" :
-                                    m.access == DragonEyes::AccessSpecifier::Protected ? "protected" : "private");
-                            std::cout << "            - [" << accessStr << "] "
-                                << m.name << "()\n";
+                    // 4.b) Attributs
+                    auto printAttrs = [&](const std::vector<DragonEyes::Variable>& attrs, const char* title) {
+                        if (!attrs.empty()) {
+                            std::cout << "          " << title << " :\n";
+                            for (auto& attr : attrs) {
+                                std::cout << "            - " << attr.type
+                                    << " " << attr.name << "\n";
+                            }
                         }
-                    }
+                        };
+                    printAttrs(cls.publicAttributes, "Attributs publics");
+                    printAttrs(cls.protectedAttributes, "Attributs protégés");
+                    printAttrs(cls.privateAttributes, "Attributs privés");
+
+                    // 4.c) Méthodes
+                    auto printMeths = [&](const std::vector<DragonEyes::Function>& meths, const char* title) {
+                        if (!meths.empty()) {
+                            std::cout << "          " << title << " :\n";
+                            for (auto& m : meths) {
+                                std::cout << "            - " << m.name << "(";
+                                for (size_t i = 0; i < m.parameters.size(); ++i) {
+                                    auto& p = m.parameters[i];
+                                    std::cout << p.type << " " << p.name
+                                        << (i + 1 < m.parameters.size() ? ", " : "");
+                                }
+                                std::cout << ")\n";
+                            }
+                        }
+                        };
+                    printMeths(cls.publicMethods, "Méthodes publiques");
+                    printMeths(cls.protectedMethods, "Méthodes protégées");
+                    printMeths(cls.privateMethods, "Méthodes privées");
                 }
             }
-            std::cout << std::string(60, '-') << "\n";
 
+            // 4) Type aliases
             if (!file.aliases.empty()) {
                 std::cout << "      Alias de types :\n";
                 for (auto& a : file.aliases) {
@@ -90,6 +107,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            std::cout << std::string(60, '-') << "\n";
         }
 
         if (!proj.missingFiles.empty()) {

@@ -26,13 +26,15 @@ namespace DragonEyes {
 
     struct CppClass {
         std::string name;
-        std::vector<Variable> attributes;
-        std::vector<Variable> attributes;
-        std::vector<Variable> attributes;
+        std::vector<std::string> baseClasses;
 
-        std::vector<Function> methods;
-        std::vector<Function> methods;
-        std::vector<Function> methods;
+        std::vector<Variable> publicAttributes;
+        std::vector<Variable> privateAttributes;
+        std::vector<Variable> protectedAttributes;
+
+        std::vector<Function> publicMethods;
+        std::vector<Function> privateMethods;
+        std::vector<Function> protectedMethods;
     };
 
     struct TypeAlias
