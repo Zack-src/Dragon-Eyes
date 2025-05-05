@@ -157,7 +157,10 @@ CXChildVisitResult DragonEyes::ASTParser::visitor(CXCursor c, CXCursor parent, C
 
         CXType t = clang_getCursorType(c);
         ta.underlyingType = toString(clang_getTypeSpelling(t));
-        f->aliases.push_back(std::move(ta));
+
+        if (ta.underlyingType != ta.name) {
+            f->aliases.push_back(std::move(ta));
+        }
     }
     default:
         break;
