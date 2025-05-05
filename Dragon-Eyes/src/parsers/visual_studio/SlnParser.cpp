@@ -40,7 +40,6 @@ SlnParser::extractProjectEntries(const std::string& slnPath) {
         if (line.rfind("Project(", 0) != 0)
             continue;
 
-        // on collecte tous les textes entre guillemets
         std::vector<std::string> elems;
         size_t pos = 0;
         while (true) {
@@ -54,7 +53,6 @@ SlnParser::extractProjectEntries(const std::string& slnPath) {
             pos = end + 1;
         }
 
-        // on doit avoir au moins : {GUID}, NomProjet, CheminProjet, {GUID2}
         if (elems.size() >= 3) {
             const std::string& projName = elems[1];
             const std::string& relPath = elems[2];
