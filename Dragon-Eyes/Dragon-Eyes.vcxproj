@@ -134,11 +134,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\parsers\cmake\cmake.cpp" />
+    <ClCompile Include="src\parsers\code\ASTParser.cpp" />
     <ClCompile Include="src\parsers\visual_studio\SlnParser.cpp" />
     <ClCompile Include="src\parsers\visual_studio\VcxprojParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\data_model\DataModel.hpp" />
+    <ClInclude Include="src\parsers\cmake\cmake.hpp" />
+    <ClInclude Include="src\parsers\code\ASTParser.hpp" />
     <ClInclude Include="src\parsers\visual_studio\SlnParser.hpp" />
     <ClInclude Include="src\parsers\visual_studio\VcxprojParser.hpp" />
   </ItemGroup>

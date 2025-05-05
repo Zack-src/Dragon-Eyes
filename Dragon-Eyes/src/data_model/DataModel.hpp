@@ -27,7 +27,18 @@ namespace DragonEyes {
     struct CppClass {
         std::string name;
         std::vector<Variable> attributes;
+        std::vector<Variable> attributes;
+        std::vector<Variable> attributes;
+
         std::vector<Function> methods;
+        std::vector<Function> methods;
+        std::vector<Function> methods;
+    };
+
+    struct TypeAlias
+    {
+        std::string name;
+        std::string underlyingType;
     };
 
     struct SourceFile {
@@ -39,6 +50,8 @@ namespace DragonEyes {
         std::vector<Variable> globals;
         std::vector<CppClass> classes;
         std::vector<Function> functions;
+
+        std::vector<TypeAlias> aliases;
     };
 
     struct Project {

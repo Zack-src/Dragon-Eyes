@@ -25,6 +25,12 @@
     <Filter Include="Fichiers sources\parsers\visual_studio">
       <UniqueIdentifier>{cf0d92da-cc03-47b4-86d9-6064f5febaf1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Fichiers sources\parsers\cmake">
+      <UniqueIdentifier>{59b7315b-00a3-4b98-a56e-07698fb16a20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\parsers\code">
+      <UniqueIdentifier>{ee52cd9d-6533-46c2-a853-10699e202f1a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -36,6 +42,12 @@
     <ClCompile Include="src\parsers\visual_studio\VcxprojParser.cpp">
       <Filter>Fichiers sources\parsers\visual_studio</Filter>
     </ClCompile>
+    <ClCompile Include="src\parsers\cmake\cmake.cpp">
+      <Filter>Fichiers sources\parsers\cmake</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parsers\code\ASTParser.cpp">
+      <Filter>Fichiers sources\parsers\code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\data_model\DataModel.hpp">
@@ -46,6 +58,12 @@
     </ClInclude>
     <ClInclude Include="src\parsers\visual_studio\VcxprojParser.hpp">
       <Filter>Fichiers sources\parsers\visual_studio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsers\cmake\cmake.hpp">
+      <Filter>Fichiers sources\parsers\cmake</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parsers\code\ASTParser.hpp">
+      <Filter>Fichiers sources\parsers\code</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
