@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SLNPARSER_HPP
+#define SLNPARSER_HPP
+
 #include <string>
 #include <vector>
 #include "../../data_model/DataModel.hpp"
@@ -15,3 +17,5 @@ namespace DragonEyes {
     };
 
 } // namespace DragonEyes
+
+#endif // !SLNPARSER_HPP

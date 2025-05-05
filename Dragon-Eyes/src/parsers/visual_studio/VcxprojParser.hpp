@@ -1,4 +1,8 @@
-#pragma once
+
+#ifndef VCXPROJPARSER_HPP
+#define VCXPROJPARSER_HPP
+
+
 #include <string>
 #include "../../data_model/DataModel.hpp"
 
@@ -10,3 +14,5 @@ namespace DragonEyes {
     };
 
 } // namespace DragonEyes
+
+#endif // !VCXPROJPARSER_HPP

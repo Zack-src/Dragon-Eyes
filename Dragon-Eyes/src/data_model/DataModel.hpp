@@ -1,6 +1,11 @@
-#pragma once
+
+#ifndef DATAMODEL_HPP
+#define DATAMODEL_HPP
+
 #include <string>
 #include <vector>
+#include <optional>
+#include <chrono>
 
 namespace DragonEyes {
 
@@ -26,6 +31,10 @@ namespace DragonEyes {
     };
 
     struct SourceFile {
+        bool exists = false;
+        std::optional<uintmax_t> size = {};
+        std::optional<std::chrono::file_clock::time_point> lastWrite = {};
+
         std::string path;
         std::vector<Variable> globals;
         std::vector<CppClass> classes;
@@ -36,6 +45,7 @@ namespace DragonEyes {
         std::string name;
         std::string path;
         std::vector<SourceFile> files;
+        std::vector<std::string> missingFiles;
     };
 
     struct Solution {
@@ -44,3 +54,5 @@ namespace DragonEyes {
     };
 
 } // namespace DragonEyes
+
+#endif // !DATAMODEL_HPP
