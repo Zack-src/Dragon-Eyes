@@ -1,0 +1,201 @@
+
+TODO
+
+Créer un outil capable de cartographier, analyser et recommander des améliorations pour du code C++ à grande échelle, compatible avec les environnements de build les plus utilisés.
+Le but est de faciliter le debug, la maintenance, et l'optimisation. Possibilité d'avoir cette outil directement intégré dans l'idée ou dans une page web local.
+
+1. Mapper de code C++
+Utilise libclang ou Clang AST pour :
+   - Lister les classes, fonctions, variables globales, namespaces.
+   - Identifier les appels directs et indirects (graph de call).
+   - Générer un plan visuel.
+   - Identifier les zones mortes (fonctions inutilisées, variables non utilisées).
+   - Possibilité d'avoir un affichage verticale ou Horizontal
+
+2. Analyse de bugs potentiels
+Détection :
+   - De fuite mémoire potentielle (new sans delete, utilisation après free).
+   - De variable non initialisée.
+   - D’utilisation dangereuse de pointeurs bruts.
+   - De conditions logiques douteuses (if (a = b)).
+
+3. Suggestions d’optimisation
+Recommandations :
+   - Remplacement de std::vector par std::array si taille fixe.
+   - Passage par référence ou rvalue si pertinent.
+   - Utilisation abusive de virtual / héritage inutile.
+   - Boucles non vectorisées / non parallélisables.
+   - Utilisation de mutex mal placés.
+
+4. Compatibilité
+   - Visual Studio 
+      + Parsing des fichiers .sln et .vcxproj
+      + Détection des plateformes (x64, x86), configurations (Debug, Release).
+   - CMake
+      + Parsing de CMakeLists.txt, détection des cibles (target_*)
+      + Intégration directe avec CMake --trace ou CMakeFileAPI.
+
+5. Additional
+   - Score global de qualité
+   - Comparaison entre commits / branch (amélioration ou dégradation du code)
+   - Proposer à l'utilisateur d'envoyer la différence de code sur un serveur pour améliorer le tool (général ou par projet (ne plus demander pour ce projet / ne plus jamais demander))
+   - Fichier save de projet
+      + save un hash de tout les fichier
+      + pour chaque fichier, garder les indications de bug / améliorations
+      + save la map du code
+
+-----
+
+
+🧭 Feuille de route du projet CppInsight
+🔹 Phase 0 – Initialisation (1-2 jours)
+Objectifs :
+Définir le périmètre précis.
+
+Créer la base du dépôt Git.
+
+Actions :
+Choisir un nom de projet (ex : CppInsight).
+
+Créer le dépôt GitHub avec :
+
+README
+
+Licence (MIT, Apache 2.0…)
+
+Organisation dossier (src, include, tests, docs, scripts, etc.).
+
+Initialiser un CMakeLists.txt propre et minimal.
+
+🔹 Phase 1 – Foundation & Parser Clang (1-2 semaines)
+Objectifs :
+Intégrer libclang pour analyser le code.
+
+Extraire les symboles (fonctions, classes, variables).
+
+Livrables :
+Un outil CLI (cppinsight analyze) capable de :
+
+Charger un fichier .cpp ou projet .sln/CMake.
+
+Extraire et afficher : liste des fichiers, fonctions, classes, variables globales.
+
+Outils :
+libclang
+
+clang-c API (bindings si nécessaire)
+
+🔹 Phase 2 – Générateur de cartographie (1-2 semaines)
+Objectifs :
+Représenter graphiquement la structure du projet.
+
+Livrables :
+Fichiers .dot (pour graphviz) ou JSON hiérarchique pour frontend futur.
+
+CLI : cppinsight map --output map.dot
+
+Possibilité de naviguer les dépendances de fichiers, appels de fonctions.
+
+Bonus :
+Générer un PNG ou SVG via Graphviz (dot -Tsvg).
+
+🔹 Phase 3 – Analyse de bugs potentiels (2 semaines)
+Objectifs :
+Détecter les erreurs classiques à la compilation et au runtime.
+
+Livrables :
+CLI : cppinsight lint ou cppinsight analyze --bugs
+
+Moteurs intégrés :
+
+Wrapper autour de CppCheck / Clang-Tidy.
+
+Analyse custom (ex : pointeur sans null-check, fuite mémoire simple).
+
+Techniques :
+Analyse statique par pattern.
+
+Heuristiques simples (par exemple : new sans delete).
+
+🔹 Phase 4 – Suggestions d’optimisation (2-3 semaines)
+Objectifs :
+Détecter les endroits où le code peut être optimisé.
+
+Livrables :
+CLI : cppinsight optimize
+
+Recommandations typiques :
+
+Références au lieu de copies.
+
+Variables inutilisées.
+
+Boucles améliorables.
+
+Containers mal choisis.
+
+Techniques :
+Analyse de l’AST Clang.
+
+Détection de motifs inefficaces.
+
+🔹 Phase 5 – Compatibilité Visual Studio / CMake (2 semaines)
+Objectifs :
+Permettre une analyse automatique selon le système de build.
+
+Visual Studio :
+Parsing .sln et .vcxproj.
+
+Détection des plateformes (x64, x86) et configurations.
+
+Extraction des chemins d’include et options du compilateur.
+
+CMake :
+Utilisation de cmake --trace-expand ou CMakeFileAPI.
+
+Parsing des cibles.
+
+🔹 Phase 6 – Génération de rapports (1 semaine)
+Objectifs :
+Exporter les résultats lisiblement.
+
+Livrables :
+Rapport HTML avec :
+
+Score global.
+
+Liste des problèmes.
+
+Cartographie interactive (si tu veux ajouter du JS plus tard).
+
+Option : JSON complet pour intégration CI/CD.
+
+🔹 Phase 7 – Tests, packaging, documentation (1 semaine)
+Objectifs :
+Stabiliser le projet et préparer la release alpha.
+
+Livrables :
+Tests unitaires (GoogleTest ou doctest).
+
+Script install.sh / setup.ps1.
+
+Documentation markdown :
+
+README clair
+
+Guide d’utilisation
+
+Exemple d’analyse
+
+🔹 Phase 8 – Publication et valorisation (en continu)
+Objectifs :
+Créer une vraie présence open source.
+
+Actions :
+Mettre un logo.
+
+Ajouter un GitHub Actions pour build/test.
+
+Rédiger un post de présentation (Reddit, HackerNews, Dev.to…).
+
+Préparer une v1.0 stable.
