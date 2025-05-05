@@ -3,6 +3,7 @@
 #include <fstream>
 #include <regex>
 #include <filesystem>
+#include <iostream>
 
 namespace fs = std::filesystem;
 using namespace DragonEyes;
@@ -17,6 +18,9 @@ Solution SlnParser::parseSolution(const std::string& slnPath) {
 
     for (auto& [projName, relPath] : entries) {
         fs::path fullProjPath = slnDir / relPath;
+
+        std::cout << "parsed : " << projName << " " << relPath << "\t" << fullProjPath.string() << std::endl;
+
         Project proj = vcxParser.parseVcxproj(fullProjPath.string());
         proj.name = projName;
         sol.projects.push_back(std::move(proj));
@@ -32,26 +36,32 @@ SlnParser::extractProjectEntries(const std::string& slnPath) {
     std::string line;
 
     while (std::getline(in, line)) {
+
         if (line.rfind("Project(", 0) != 0)
             continue;
 
-        size_t p1 = line.find('"');
-        if (p1 == std::string::npos) continue;
+        // on collecte tous les textes entre guillemets
+        std::vector<std::string> elems;
+        size_t pos = 0;
+        while (true) {
+            size_t start = line.find('"', pos);
+            if (start == std::string::npos) break;
+            
+            size_t end = line.find('"', start + 1);
+            if (end == std::string::npos) break;
+            
+            elems.emplace_back(line.substr(start + 1, end - start - 1));
+            pos = end + 1;
+        }
 
-        size_t p2 = line.find('"', p1 + 1);
-        if (p2 == std::string::npos) continue;
-
-        std::string projName = line.substr(p1 + 1, p2 - p1 - 1);
-
-        size_t p3 = line.find('"', p2 + 1);
-        if (p3 == std::string::npos) continue;
-
-        size_t p4 = line.find('"', p3 + 1);
-        if (p4 == std::string::npos) continue;
-
-        std::string relPath = line.substr(p3 + 1, p4 - p3 - 1);
-        result.emplace_back(projName, relPath);
+        // on doit avoir au moins : {GUID}, NomProjet, CheminProjet, {GUID2}
+        if (elems.size() >= 3) {
+            const std::string& projName = elems[1];
+            const std::string& relPath = elems[2];
+            result.emplace_back(projName, relPath);
+        }
     }
 
     return result;
 }
+

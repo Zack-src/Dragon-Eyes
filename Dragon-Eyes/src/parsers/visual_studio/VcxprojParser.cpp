@@ -1,6 +1,7 @@
 #include "VcxprojParser.hpp"
 #include "tinyxml2.h"
 #include <filesystem>
+#include <iostream>
 
 namespace fs = std::filesystem;
 using namespace tinyxml2;
@@ -13,6 +14,7 @@ Project VcxprojParser::parseVcxproj(const std::string& vcxprojPath) {
 
     XMLDocument doc;
     if (doc.LoadFile(vcxprojPath.c_str()) != XML_SUCCESS) {
+        std::cout << "leave " << vcxprojPath << std::endl;
         return project;
     }
 
@@ -23,6 +25,9 @@ Project VcxprojParser::parseVcxproj(const std::string& vcxprojPath) {
                 SourceFile f;
                 fs::path p = fs::path(vcxprojPath).parent_path() / inc;
                 f.path = fs::weakly_canonical(p).string();
+
+                std::cout << "\t" << f.path << std::endl;
+
                 project.files.push_back(std::move(f));
             }
         }
@@ -31,6 +36,9 @@ Project VcxprojParser::parseVcxproj(const std::string& vcxprojPath) {
                 SourceFile f;
                 fs::path p = fs::path(vcxprojPath).parent_path() / inc;
                 f.path = fs::weakly_canonical(p).string();
+
+                std::cout << "\t" << f.path << std::endl;
+
                 project.files.push_back(std::move(f));
             }
         }
