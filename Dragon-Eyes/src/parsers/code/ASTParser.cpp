@@ -36,138 +36,231 @@ void DragonEyes::ASTParser::parseFile(SourceFile& f) {
 }
 
 CXChildVisitResult DragonEyes::ASTParser::visitor(CXCursor c, CXCursor parent, CXClientData clientData) {
+    auto* f = reinterpret_cast<SourceFile*>(clientData);
 
+    // 1) Ne traiter que le fichier principal
     CXSourceLocation loc = clang_getCursorLocation(c);
     if (!clang_Location_isFromMainFile(loc))
         return CXChildVisit_Continue;
 
-    auto* f = reinterpret_cast<DragonEyes::SourceFile*>(clientData);
     CXCursorKind kind = clang_getCursorKind(c);
-
     switch (kind) {
-    case CXCursor_VarDecl: { // variable global
-        DragonEyes::Variable var;
-        var.name = toString(clang_getCursorSpelling(c));
-        var.type = toString(clang_getTypeSpelling(clang_getCursorType(c)));
-        var.access = AccessSpecifier::Public;
-        f->globals.push_back(std::move(var));
+    //--- Namespace: descendre pour trouver inline globals ---
+    case CXCursor_Namespace: {
+        clang_visitChildren(c, visitor, clientData);
         break;
     }
-    case CXCursor_FunctionDecl: { // free function
-        DragonEyes::Function fn;
-        fn.name = toString(clang_getCursorSpelling(c));
-        fn.access = AccessSpecifier::Public;
 
-        int numArgs = clang_Cursor_getNumArguments(c);
-        for (int i = 0; i < numArgs; ++i) {
-            CXCursor arg = clang_Cursor_getArgument(c, i);
-            DragonEyes::Variable v;
-            v.name = toString(clang_getCursorSpelling(arg));
-            v.type = toString(clang_getTypeSpelling(clang_getCursorType(arg)));
-            v.access = AccessSpecifier::Public;
-            fn.parameters.push_back(std::move(v));
+    //--- Variables globales ou inline namespace vars ---
+    case CXCursor_VarDecl: {
+        CXCursor semParent = clang_getCursorSemanticParent(c);
+        CXCursorKind pkind = clang_getCursorKind(semParent);
+        if (pkind == CXCursor_TranslationUnit || pkind == CXCursor_Namespace) {
+            Variable var;
+            var.name   = toString(clang_getCursorSpelling(c));
+            var.type   = toString(clang_getTypeSpelling(clang_getCursorType(c)));
+            var.access = AccessSpecifier::Public;
+            f->globals.push_back(std::move(var));
         }
-        f->functions.push_back(std::move(fn));
         break;
     }
-    case CXCursor_StructDecl:
-    case CXCursor_ClassDecl: {
 
-        DragonEyes::CppClass cls;
-        cls.name = toString(clang_getCursorSpelling(c));
+    //--- Fonctions libres ---
+    case CXCursor_FunctionDecl: {
+        CXCursor semParent = clang_getCursorSemanticParent(c);
+        if (clang_getCursorKind(semParent) == CXCursor_TranslationUnit) {
+            Function fn;
+            fn.name   = toString(clang_getCursorSpelling(c));
+            fn.access = AccessSpecifier::Public;
+            // paramètres
+            int nargs = clang_Cursor_getNumArguments(c);
+            for (int i = 0; i < nargs; ++i) {
+                CXCursor arg = clang_Cursor_getArgument(c, i);
+                Variable p;
+                p.name   = toString(clang_getCursorSpelling(arg));
+                p.type   = toString(clang_getTypeSpelling(clang_getCursorType(arg)));
+                p.access = AccessSpecifier::Public;
+                fn.parameters.push_back(std::move(p));
+            }
+            f->functions.push_back(std::move(fn));
+        }
+        break;
+    }
 
-        clang_visitChildren(
-            c,
-            [](CXCursor cc, CXCursor parent2, CXClientData clientData) {
-                auto* clsPtr = reinterpret_cast<DragonEyes::CppClass*>(clientData);
-                CXCursorKind kind = clang_getCursorKind(cc);
-                AccessSpecifier acc = toAccessSpec(cc);
-
-                // 2.a) Spécificateurs de base (parents)
-                if (kind == CXCursor_CXXBaseSpecifier) {
-                    // type de la base (nom de la classe parente)
-                    std::string baseName =
-                        toString(clang_getTypeSpelling(clang_getCursorType(cc)));
-                    clsPtr->baseClasses.push_back(std::move(baseName));
-                }
-                // 2.b) Attributs (FieldDecl)
-                else if (kind == CXCursor_FieldDecl) {
-                    DragonEyes::Variable attr;
-                    attr.name = toString(clang_getCursorSpelling(cc));
-                    attr.type = toString(
-                        clang_getTypeSpelling(clang_getCursorType(cc)));
-                    attr.access = acc;
-
-                    // ajout suivant l’accès
-                    if (acc == AccessSpecifier::Public)
-                        clsPtr->publicAttributes.push_back(std::move(attr));
-                    else if (acc == AccessSpecifier::Protected)
-                        clsPtr->protectedAttributes.push_back(std::move(attr));
-                    else
-                        clsPtr->privateAttributes.push_back(std::move(attr));
-                }
-                // 2.c) Méthodes (CXXMethod)
-                else if (kind == CXCursor_CXXMethod) {
-                    DragonEyes::Function m;
-                    m.name = toString(clang_getCursorSpelling(cc));
-                    m.access = acc;
-                    // récupération des paramètres si nécessaire :
-                    int nargs = clang_Cursor_getNumArguments(cc);
-                    for (int i = 0; i < nargs; ++i) {
-                        CXCursor arg = clang_Cursor_getArgument(cc, i);
-                        DragonEyes::Variable p;
-                        p.name = toString(clang_getCursorSpelling(arg));
-                        p.type = toString(
-                            clang_getTypeSpelling(clang_getCursorType(arg)));
-                        p.access = AccessSpecifier::Public;
-                        m.parameters.push_back(std::move(p));
-                    }
-
-                    // ajout suivant l’accès
-                    if (acc == AccessSpecifier::Public)
-                        clsPtr->publicMethods.push_back(std::move(m));
-                    else if (acc == AccessSpecifier::Protected)
-                        clsPtr->protectedMethods.push_back(std::move(m));
-                    else
-                        clsPtr->privateMethods.push_back(std::move(m));
-                }
-
-                return CXChildVisit_Recurse;
-            },
-            &cls
+    //--- Typedef et using ---
+    case CXCursor_TypedefDecl: {
+        TypeAlias ta;
+        ta.name           = toString(clang_getCursorSpelling(c));
+        ta.underlyingType = toString(
+            clang_getTypeSpelling(
+                clang_getTypedefDeclUnderlyingType(c)
+            )
         );
+        if (ta.underlyingType != ta.name)
+            f->aliases.push_back(std::move(ta));
+        break;
+    }
+    case CXCursor_TypeAliasDecl: {
+        TypeAlias ta;
+        ta.name           = toString(clang_getCursorSpelling(c));
+        CXType t          = clang_getCursorType(c);
+        ta.underlyingType = toString(clang_getTypeSpelling(t));
+        if (ta.underlyingType != ta.name)
+            f->aliases.push_back(std::move(ta));
+        break;
+    }
 
-        // 3) On enregistre la classe complète dans le fichier
+    //--- Enumérations ---
+    case CXCursor_EnumDecl: {
+        // parcourir les constantes
+        clang_visitChildren(c, [](CXCursor cc, CXCursor, CXClientData) {
+            if (clang_getCursorKind(cc) == CXCursor_EnumConstantDecl) {
+                std::string label = toString(clang_getCursorSpelling(cc));
+                long long val = clang_getEnumConstantDeclValue(cc);
+                std::string value = std::to_string(val);
+                // Pour l'instant on affiche ; vous pouvez stocker ailleurs
+                std::cout << "    Enum constant: " << label << " = " << value << "\n";
+            }
+            return CXChildVisit_Continue;
+            }, nullptr);
+        break;
+    }
+
+    //--- Définition d'une classe/struct ---
+    case CXCursor_ClassDecl:
+    case CXCursor_StructDecl: {
+        CppClass cls;
+        cls.name = toString(clang_getCursorSpelling(c));
+        // nappes de base
+        clang_visitChildren(c, [](CXCursor cc, CXCursor, CXClientData clientData) {
+            auto* clsPtr = reinterpret_cast<CppClass*>(clientData);
+            CXCursorKind k2 = clang_getCursorKind(cc);
+            if (k2 == CXCursor_CXXBaseSpecifier) {
+                std::string base = toString(
+                    clang_getTypeSpelling(clang_getCursorType(cc))
+                );
+                clsPtr->baseClasses.push_back(std::move(base));
+            }
+            return CXChildVisit_Continue;
+            }, &cls);
+        // champs et méthodes internes
+        clang_visitChildren(c, [](CXCursor cc, CXCursor, CXClientData clientData) {
+            auto* clsPtr = reinterpret_cast<CppClass*>(clientData);
+            CXCursorKind k2 = clang_getCursorKind(cc);
+            AccessSpecifier acc = toAccessSpec(cc);
+            if (k2 == CXCursor_FieldDecl) {
+                Variable attr;
+                attr.name   = toString(clang_getCursorSpelling(cc));
+                attr.type   = toString(
+                    clang_getTypeSpelling(clang_getCursorType(cc))
+                );
+                attr.access = acc;
+                if (acc == AccessSpecifier::Public)
+                    clsPtr->publicAttributes.push_back(std::move(attr));
+                else if (acc == AccessSpecifier::Protected)
+                    clsPtr->protectedAttributes.push_back(std::move(attr));
+                else
+                    clsPtr->privateAttributes.push_back(std::move(attr));
+            }
+            else if (k2 == CXCursor_CXXMethod) {
+                Function m;
+                m.name   = toString(clang_getCursorSpelling(cc));
+                m.access = acc;
+                int nargs = clang_Cursor_getNumArguments(cc);
+                for (int i = 0; i < nargs; ++i) {
+                    CXCursor arg = clang_Cursor_getArgument(cc, i);
+                    Variable p;
+                    p.name   = toString(clang_getCursorSpelling(arg));
+                    p.type   = toString(
+                        clang_getTypeSpelling(clang_getCursorType(arg))
+                    );
+                    p.access = AccessSpecifier::Public;
+                    m.parameters.push_back(std::move(p));
+                }
+                if (acc == AccessSpecifier::Public)
+                    clsPtr->publicMethods.push_back(std::move(m));
+                else if (acc == AccessSpecifier::Protected)
+                    clsPtr->protectedMethods.push_back(std::move(m));
+                else
+                    clsPtr->privateMethods.push_back(std::move(m));
+            }
+            return CXChildVisit_Continue;
+            }, &cls);
         f->classes.push_back(std::move(cls));
         break;
     }
 
-    case CXCursor_TypedefDecl: {
-        TypeAlias ta;
-        ta.name = toString(clang_getCursorSpelling(c));
-        ta.underlyingType = toString(clang_getTypeSpelling(clang_getTypedefDeclUnderlyingType(c)));
+                            //--- Méthodes définies hors de la classe (.cpp) ---
+    case CXCursor_CXXMethod: {
+        if (!clang_isCursorDefinition(c))
+            break;
+        CXCursor semParent = clang_getCursorSemanticParent(c);
+        if (clang_getCursorKind(semParent) != CXCursor_ClassDecl &&
+            clang_getCursorKind(semParent) != CXCursor_StructDecl)
+            break;
+        std::string clsName = toString(
+            clang_getCursorSpelling(semParent)
+        );
+        auto it = std::find_if(
+            f->classes.begin(), f->classes.end(),
+            [&](auto& cls){ return cls.name == clsName; }
+        );
+        if (it == f->classes.end()) break;
+        CppClass& cls = *it;
 
-        if (ta.underlyingType != ta.name) {
-            f->aliases.push_back(std::move(ta));
+        Function m;
+        m.name   = toString(clang_getCursorSpelling(c));
+        m.access = toAccessSpec(c);
+        int nargs = clang_Cursor_getNumArguments(c);
+        for (int i = 0; i < nargs; ++i) {
+            CXCursor arg = clang_Cursor_getArgument(c, i);
+            Variable p;
+            p.name   = toString(clang_getCursorSpelling(arg));
+            p.type   = toString(
+                clang_getTypeSpelling(clang_getCursorType(arg))
+            );
+            p.access = AccessSpecifier::Public;
+            m.parameters.push_back(std::move(p));
         }
-    }
-    case CXCursor_TypeAliasDecl: {
-        TypeAlias ta;
-        ta.name = toString(clang_getCursorSpelling(c));
+        // corps de la méthode : locales & appels
+        clang_visitChildren(c, [](CXCursor cc, CXCursor, CXClientData clientData) {
+            auto* mPtr = reinterpret_cast<Function*>(clientData);
+            CXCursorKind k2 = clang_getCursorKind(cc);
+            if (k2 == CXCursor_VarDecl) {
+                Variable v;
+                v.name   = toString(clang_getCursorSpelling(cc));
+                v.type   = toString(
+                    clang_getTypeSpelling(clang_getCursorType(cc))
+                );
+                v.access = AccessSpecifier::Private;
+                mPtr->localVariables.push_back(std::move(v));
+            } else if (k2 == CXCursor_CallExpr) {
+                std::string called = toString(
+                    clang_getCursorSpelling(cc)
+                );
+                if (!called.empty())
+                    mPtr->calledFunctions.push_back(called);
+            }
+            return CXChildVisit_Recurse;
+            }, &m);
 
-        CXType t = clang_getCursorType(c);
-        ta.underlyingType = toString(clang_getTypeSpelling(t));
-
-        if (ta.underlyingType != ta.name) {
-            f->aliases.push_back(std::move(ta));
-        }
+        // injection
+        if (m.access == AccessSpecifier::Public)
+            cls.publicMethods.push_back(std::move(m));
+        else if (m.access == AccessSpecifier::Protected)
+            cls.protectedMethods.push_back(std::move(m));
+        else
+            cls.privateMethods.push_back(std::move(m));
+        break;
     }
+
     default:
         break;
     }
 
     return CXChildVisit_Recurse;
 }
+
 
 std::string DragonEyes::ASTParser::toString(CXString s) {
     std::string str = clang_getCString(s);

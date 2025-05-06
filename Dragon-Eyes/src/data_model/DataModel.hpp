@@ -20,6 +20,7 @@ namespace DragonEyes {
     struct Function {
         std::string name;
         std::vector<Variable> parameters;
+        std::vector<Variable> localVariables;
         std::vector<std::string> calledFunctions;
         AccessSpecifier access = AccessSpecifier::Private;
     };

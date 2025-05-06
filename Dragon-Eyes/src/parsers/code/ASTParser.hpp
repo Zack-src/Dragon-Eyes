@@ -29,5 +29,4 @@ namespace DragonEyes {
 
 }
 
-
 #endif // !ASTPARSER_HPP
